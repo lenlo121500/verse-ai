@@ -10,10 +10,19 @@ const Home = () => {
   return (
     <>
       <Navbar />
-      <Hero />
-      <AiTools />
-      <Testimonial />
-      <Plan />
+      <section id="hero">
+        <Hero />
+      </section>
+      <section id="features">
+        <AiTools />
+      </section>
+      <section id="testimonials">
+        <Testimonial />
+      </section>
+      <section id="pricing">
+        <Plan />
+      </section>
+
       <Footer />
     </>
   );
