@@ -9,6 +9,7 @@ import logger from "./utils/logger.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import aiRouter from "./routes/ai.route.js";
 import connectCloudinary from "./config/cloudinary.js";
+import userRouter from "./routes/user.route.js";
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.get("/health", (req, res) => {
 
 app.use(requireAuth());
 app.use("/api/ai", aiRouter);
+app.use("/api/users", userRouter);
 
 app.use(errorHandler);
 
