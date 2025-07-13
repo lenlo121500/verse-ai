@@ -1,4 +1,4 @@
-import express from "exress";
+import express from "express";
 import {
   getPublishedCreations,
   getUserCreations,
