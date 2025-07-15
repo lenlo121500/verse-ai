@@ -25,7 +25,7 @@ export const getPublishedCreations = async (req, res, next) => {
   logger.info("publishCreations controller hit.");
   try {
     const creations =
-      await sql`SELECT * FROM creations WHERE published = true ORDER BY created_at DESC`;
+      await sql`SELECT * FROM creations WHERE publish = true ORDER BY created_at DESC`;
 
     if (!creations || creations.length === 0) {
       throw new APIError(404, "No creations found.");
@@ -55,7 +55,7 @@ export const toggleLikeCreation = async (req, res, next) => {
     let message;
 
     if (currentLikes.includes(userIdStr)) {
-      updatedLikes = currentLikes.filteR((like) => user !== userIdStr);
+      updatedLikes = currentLikes.filter((user) => user !== userIdStr);
       message = "Creation unliked.";
     } else {
       updatedLikes = [...currentLikes, userIdStr];

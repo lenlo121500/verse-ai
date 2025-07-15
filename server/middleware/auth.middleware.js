@@ -5,9 +5,6 @@ import logger from "../utils/logger.js";
 
 export const auth = async (req, res, next) => {
   try {
-    console.log("Authorization Header:", req.headers.authorization);
-    console.log("req.auth:", await req.auth());
-
     const { userId, has } = await req.auth();
     const hasPremiumPlan = await has({ plan: "premium" });
 

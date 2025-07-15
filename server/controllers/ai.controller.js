@@ -15,7 +15,7 @@ const AI = new OpenAI({
 });
 
 export const generateArticle = async (req, res, next) => {
-  logger.info("getArticle controller hit.");
+  logger.info("generateArticle controller hit.");
   try {
     const { userId } = req.auth();
     const { prompt, length } = req.body;
@@ -43,7 +43,7 @@ export const generateArticle = async (req, res, next) => {
     await sql`INSERT INTO creations (
         user_id, prompt, content, type
     ) VALUES (
-       ${userId}, ${prompt}, ${content}, "article")`;
+       ${userId}, ${prompt}, ${content}, 'article')`;
 
     if (plan !== "premium") {
       await clerkClient.users.updateUserMetadata(userId, {
@@ -55,7 +55,7 @@ export const generateArticle = async (req, res, next) => {
 
     res.status(200).json({ success: true, content });
   } catch (error) {
-    logger.error(`Error in getArticle controller: ${error.message}`);
+    logger.error(`Error in generateArticle controller: ${error.message}`);
     next(error);
   }
 };
@@ -89,7 +89,7 @@ export const generateBlogTitle = async (req, res, next) => {
     await sql`INSERT INTO creations (
         user_id, prompt, content, type
     ) VALUES (
-       ${userId}, ${prompt}, ${content}, "blog-title")`;
+       ${userId}, ${prompt}, ${content}, 'blog-title')`;
 
     if (plan !== "premium") {
       await clerkClient.users.updateUserMetadata(userId, {
@@ -122,7 +122,7 @@ export const generateImage = async (req, res, next) => {
     const formData = new FormData();
     formData.append("prompt", prompt);
     const { data } = await axios.post(
-      "'https://clipdrop-api.co/text-to-image/v1'",
+      "https://clipdrop-api.co/text-to-image/v1",
       formData,
       {
         headers: {
@@ -142,11 +142,11 @@ export const generateImage = async (req, res, next) => {
     await sql`INSERT INTO creations (
         user_id, prompt, content, type, publish
     ) VALUES (
-       ${userId}, ${prompt}, ${secure_url}, "image", ${publish ?? false})`;
+       ${userId}, ${prompt}, ${secure_url}, 'image', ${publish ?? false})`;
 
-    res.status(200).json({ success: true, content });
+    res.status(200).json({ success: true, content: secure_url });
   } catch (error) {
-    logger.error(`Error in getBlogTitle controller: ${error.message}`);
+    logger.error(`Error in generateImage controller: ${error.message}`);
     next(error);
   }
 };
@@ -155,7 +155,7 @@ export const removeImageBackground = async (req, res, next) => {
   logger.info("removeImageBackground controller hit.");
   try {
     const { userId } = req.auth();
-    const { image } = req.file;
+    const image = req.file;
     const plan = req.plan;
 
     if (plan !== "premium") {
@@ -176,7 +176,7 @@ export const removeImageBackground = async (req, res, next) => {
     await sql`INSERT INTO creations (
         user_id, prompt, content, type
     ) VALUES (
-       ${userId}, "Remove background from image", ${secure_url}, "image"
+       ${userId}, ${"Remove Background from image"}, ${secure_url}, 'image'
     )`;
 
     res.status(200).json({ success: true, content: secure_url });
@@ -191,7 +191,7 @@ export const removeImageObject = async (req, res, next) => {
   try {
     const { userId } = req.auth();
     const { object } = req.body;
-    const { image } = req.file;
+    const image = req.file;
     const plan = req.plan;
 
     if (plan !== "premium") {
@@ -212,9 +212,9 @@ export const removeImageObject = async (req, res, next) => {
     });
 
     await sql`INSERT INTO creations (
-        user_id, prompt, content, type, 
+        user_id, prompt, content, type 
     ) VALUES (
-       ${userId}, ${`Remove ${object} from image`}, ${imageUrl}, "image")`;
+       ${userId}, ${`Remove ${object} from image`}, ${imageUrl}, 'image')`;
 
     res.status(200).json({ success: true, content: imageUrl });
   } catch (error) {
@@ -224,7 +224,7 @@ export const removeImageObject = async (req, res, next) => {
 };
 
 export const reviewResume = async (req, res, next) => {
-  logger.info("getBlogTitle controller hit.");
+  logger.info("reviewResume controller hit.");
   try {
     const { userId } = req.auth();
     const resume = req.file;
@@ -260,13 +260,13 @@ export const reviewResume = async (req, res, next) => {
     const content = response.choices[0].message.content;
 
     await sql`INSERT INTO creations (
-        user_id, prompt, content, type, 
+        user_id, prompt, content, type 
     ) VALUES (
-       ${userId}, ${prompt}, ${content}, "resume-review")`;
+       ${userId}, ${prompt}, ${content}, 'resume-review')`;
 
     res.status(200).json({ success: true, content });
   } catch (error) {
-    logger.error(`Error in removeImageObject controller: ${error.message}`);
+    logger.error(`Error in resumeReview controller: ${error.message}`);
     next(error);
   }
 };
