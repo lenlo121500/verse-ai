@@ -1,18 +1,41 @@
 import React, { useEffect, useState } from "react";
-import { dummyCreationData } from "../assets/assets";
-import { Protect } from "@clerk/clerk-react";
+import { Protect, useAuth } from "@clerk/clerk-react";
 import { Gem, Sparkles, FileText } from "lucide-react";
 import CreationItem from "../components/CreationItem";
+import axios from "axios";
+import toast from "react-hot-toast";
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 const Dashboard = () => {
   const [creations, setCreations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const { getToken } = useAuth();
 
   const getDashboardData = async () => {
-    // For testing fallback, comment out the line below
-    setCreations(dummyCreationData);
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        return;
+      }
 
-    // To test fallback state, uncomment this line and comment out the line above
-    // setCreations([]);
+      const { data } = await axios.get("/api/users/get-user-creations", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (data.success) {
+        setCreations(data.creations);
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+      console.log(error);
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -50,25 +73,31 @@ const Dashboard = () => {
         </div>
       </div>
 
-      <div className="space-y-3">
-        <p className="mt-6 mb-4">Recent Creations</p>
+      {loading ? (
+        <div className="flex justify-center items-center h-3/4">
+          <div className="animate-spin rounded-full size-11 border-3 border-purple-500 border-t-transparent"></div>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="mt-6 mb-4">Recent Creations</p>
 
-        {creations.length > 0 ? (
-          // Show creations if they exist
-          creations.map((item) => <CreationItem key={item.id} item={item} />)
-        ) : (
-          // Show fallback when no creations exist
-          <div className="flex flex-col items-center justify-center py-12 text-center">
-            <FileText className="w-16 h-16 text-gray-400 mb-4" />
-            <p className="text-gray-500 text-lg mb-4">
-              You don't have creations yet
-            </p>
-            <button className="px-6 py-3 bg-gradient-to-br from-[#3588F2] to-[#0BB0d7] text-white rounded-xl font-medium hover:opacity-90 transition-opacity">
-              Create now
-            </button>
-          </div>
-        )}
-      </div>
+          {creations.length > 0 ? (
+            // Show creations if they exist
+            creations.map((item) => <CreationItem key={item.id} item={item} />)
+          ) : (
+            // Show fallback when no creations exist
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <FileText className="w-16 h-16 text-gray-400 mb-4" />
+              <p className="text-gray-500 text-lg mb-4">
+                You don't have creations yet
+              </p>
+              <p className="text-gray-500 text-sm">
+                Create your first creation to get started
+              </p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

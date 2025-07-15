@@ -1,11 +1,49 @@
 import React, { useState } from "react";
-import { Eraser, FileText, Sparkles, Upload } from "lucide-react";
+import { FileText, Sparkles, Upload } from "lucide-react";
+import axios from "axios";
+import { toast } from "react-hot-toast";
+import { useAuth } from "@clerk/clerk-react";
+import Markdown from "react-markdown";
+
+axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 
 const ReviewResume = () => {
   const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [content, setContent] = useState("");
+
+  const { getToken } = useAuth();
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
+    try {
+      setLoading(true);
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("resume", input);
+
+      const { data } = await axios.post("/api/ai/review-resume", formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (data.success) {
+        setContent(data.content);
+        toast.success("Resume reviewed successfully.");
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      toast.error("Something went wrong. Please try again.");
+      console.log(error);
+    }
+    setLoading(false);
   };
 
   const handleFileChange = (e) => {
@@ -16,7 +54,7 @@ const ReviewResume = () => {
     <div className="h-full overflow-y-scroll p-6 flex items-start flex-wrap gap-4 text-slate-700">
       {/* Left Column */}
       <form
-        onSubmitHandler={onSubmitHandler}
+        onSubmit={onSubmitHandler}
         className="w-full md:w-[48%] max-w-lg p-4 bg-white rounded-lg border-gray-200"
       >
         <div className="flex items-center gap-3">
@@ -46,8 +84,15 @@ const ReviewResume = () => {
           Only PDF files are allowed
         </p>
 
-        <button className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#00da83] to-[#009bb3] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer hover:-translate-y-1 active:scale-95 transition">
-          <FileText className="w-5" />
+        <button
+          disabled={loading}
+          className="w-full flex justify-center items-center gap-2 bg-gradient-to-r from-[#00da83] to-[#009bb3] text-white px-4 py-2 mt-6 text-sm rounded-lg cursor-pointer hover:-translate-y-1 active:scale-95 transition"
+        >
+          {loading ? (
+            <span className="size-4 my-1 rounded-full border-2 border-t-transparent animate-spin" />
+          ) : (
+            <FileText className="w-5" />
+          )}
           Review Resume
         </button>
       </form>
@@ -58,12 +103,20 @@ const ReviewResume = () => {
           <h1 className="text-xl font-semibold">Analysis Result</h1>
         </div>
 
-        <div className="flex-1 flex justify-center items-center">
-          <div className="text-sm flex flex-col items-center gap-5 text-gray-400">
-            <FileText className="size-9" />
-            <p>Upload your file and click "Review Resume"</p>
+        {!content ? (
+          <div className="flex-1 flex justify-center items-center">
+            <div className="text-sm flex flex-col items-center gap-5 text-gray-400">
+              <FileText className="size-9" />
+              <p>Upload your file and click "Review Resume"</p>
+            </div>
           </div>
-        </div>
+        ) : (
+          <div className="mt-3 h-full overflow-y-scroll text-sm text-slate-600">
+            <div className="reset-tw">
+              <Markdown>{content}</Markdown>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

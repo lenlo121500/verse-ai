@@ -10,10 +10,12 @@ import RemoveBackground from "./pages/RemoveBackground";
 import RemoveObject from "./pages/RemoveObject";
 import ReviewResume from "./pages/ReviewResume";
 import Community from "./pages/Community";
+import { Toaster } from "react-hot-toast";
 
 const App = () => {
   return (
     <div>
+      <Toaster position="top-center" />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/ai" element={<Layout />}>
