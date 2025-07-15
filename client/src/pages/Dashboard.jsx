@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Protect, useAuth } from "@clerk/clerk-react";
 import { Gem, Sparkles, FileText } from "lucide-react";
 import CreationItem from "../components/CreationItem";
+import ConfirmationModal from "../components/ConfirmationModal";
 import axios from "axios";
 import toast from "react-hot-toast";
 
@@ -10,6 +11,9 @@ axios.defaults.baseURL = import.meta.env.VITE_BASE_URL;
 const Dashboard = () => {
   const [creations, setCreations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [deletingId, setDeletingId] = useState(null);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [creationToDelete, setCreationToDelete] = useState(null);
   const { getToken } = useAuth();
 
   const getDashboardData = async () => {
@@ -36,6 +40,57 @@ const Dashboard = () => {
       console.log(error);
     }
     setLoading(false);
+  };
+
+  const handleDelete = async (creationId) => {
+    // Show the confirmation modal
+    setCreationToDelete(creationId);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!creationToDelete) return;
+
+    setDeletingId(creationToDelete);
+
+    try {
+      const token = await getToken();
+      if (!token) {
+        toast.error("Authentication required. Please log in again.");
+        return;
+      }
+
+      const { data } = await axios.delete(
+        `/api/users/delete-creation/${creationToDelete}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (data.success) {
+        // Remove the deleted creation from the state
+        setCreations((prev) =>
+          prev.filter((creation) => creation.id !== creationToDelete)
+        );
+        toast.success("Creation deleted successfully!");
+      } else {
+        toast.error(data.message || "Failed to delete creation");
+      }
+    } catch (error) {
+      toast.error("Failed to delete creation. Please try again.");
+      console.log(error);
+    } finally {
+      setDeletingId(null);
+      setShowDeleteModal(false);
+      setCreationToDelete(null);
+    }
+  };
+
+  const cancelDelete = () => {
+    setShowDeleteModal(false);
+    setCreationToDelete(null);
   };
 
   useEffect(() => {
@@ -82,10 +137,15 @@ const Dashboard = () => {
           <p className="mt-6 mb-4">Recent Creations</p>
 
           {creations.length > 0 ? (
-            // Show creations if they exist
-            creations.map((item) => <CreationItem key={item.id} item={item} />)
+            creations.map((item) => (
+              <CreationItem
+                key={item.id}
+                item={item}
+                onDelete={handleDelete}
+                isDeleting={deletingId === item.id}
+              />
+            ))
           ) : (
-            // Show fallback when no creations exist
             <div className="flex flex-col items-center justify-center py-12 text-center">
               <FileText className="w-16 h-16 text-gray-400 mb-4" />
               <p className="text-gray-500 text-lg mb-4">
@@ -98,6 +158,19 @@ const Dashboard = () => {
           )}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={cancelDelete}
+        onConfirm={confirmDelete}
+        title="Delete Creation"
+        message="Are you sure you want to delete this creation? This action cannot be undone and all associated data will be permanently removed."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isLoading={deletingId !== null}
+        type="danger"
+      />
     </div>
   );
 };

@@ -72,3 +72,58 @@ export const toggleLikeCreation = async (req, res, next) => {
     next(error);
   }
 };
+
+export const deleteCreation = async (req, res, next) => {
+  logger.info("deleteCreation controller hit.");
+  try {
+    const { userId } = req.auth();
+    const { id } = req.params;
+
+    if (!id) {
+      throw new APIError(400, "Creation id is required.");
+    }
+
+    const creationId = parseInt(id);
+    if (isNaN(creationId)) {
+      throw new APIError(400, "Invalid creation id.");
+    }
+
+    const existingCreation = await sql`
+      SELECT id, user_id
+      FROM creations
+      WHERE id = ${creationId}
+    `;
+
+    if (existingCreation.length === 0) {
+      throw new APIError(404, "Creation not found.");
+    }
+
+    if (existingCreation[0].user_id !== userId) {
+      throw new APIError(
+        403,
+        "You are not authorized to delete this creation."
+      );
+    }
+
+    const result = await sql`
+      DELETE FROM creations
+      WHERE id = ${creationId} AND user_id = ${userId}
+    `;
+
+    if (result.count === 0) {
+      throw new APIError(404, "Creation not found or could not be deleted.");
+    }
+
+    logger.info(
+      `Creation ${creationId} deleted successfully by user ${userId}.`
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Creation deleted successfully.",
+    });
+  } catch (error) {
+    logger.error(`Error in deleteCreation: ${error}`);
+    next(error);
+  }
+};
